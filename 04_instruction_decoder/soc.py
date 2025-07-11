@@ -1,4 +1,3 @@
-import sys
 from amaranth import *
 
 from clockworks import Clockworks
@@ -16,7 +15,10 @@ class SOC(Elaboratable):
 
         m = Module()
 
-        cw = Clockworks(m, slow=21)
+        cw = Clockworks(slow=21)
+
+        m.domains += ClockDomain(cw.domain_name)
+
         m.submodules.cw = cw
 
         # Instruction sequence to be executed
@@ -34,7 +36,7 @@ class SOC(Elaboratable):
                 0b00000000000100001000000010010011, # I addi x1, x1,  1
                 0b00000000000100001000000010010011, # I addi x1, x1,  1
                 0b00000000000000001010000100000011, # I lw   x2, 0(x1)
-                0b00000000000100010010000000100011, # S sw   x2, 0(x1)
+                0b00000000001000001010000000100011, # S sw   x2, 0(x1)
                 0b00000000000100000000000001110011  # S ebreak
         ]
 
@@ -69,7 +71,7 @@ class SOC(Elaboratable):
         # Register addresses decoder
         rs1Id = (instr[15:20])
         rs2Id = (instr[20:25])
-        rdId = ( instr[7:12])
+        rdId =  (instr[ 7:12])
 
         # Function code decdore
         funct3 = (instr[12:15])
@@ -100,6 +102,11 @@ class SOC(Elaboratable):
             export(instr, "instr")
             export(isALUreg, "isALUreg")
             export(isALUimm, "isALUimm")
+            export(isBranch, "isBranch")
+            export(isJALR, "isJALR")
+            export(isJAL, "isJAL")
+            export(isAUIPC, "isAUIPC")
+            export(isLUI, "isLUI")
             export(isLoad, "isLoad")
             export(isStore, "isStore")
             export(isSystem, "isSystem")

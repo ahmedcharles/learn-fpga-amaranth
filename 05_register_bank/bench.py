@@ -24,11 +24,17 @@ async def testbench(ctx):
                     ctx.get(soc.rdId), ctx.get(soc.rs1Id), ctx.get(soc.Iimm),
                     ctx.get(soc.funct3)))
             if ctx.get(soc.isLoad):
-                print("LOAD")
+                print("LOAD rd={} rs1={} imm={} funct3={}".format(
+                    ctx.get(soc.rdId), ctx.get(soc.rs1Id), ctx.get(soc.Iimm),
+                    ctx.get(soc.funct3)))
             if ctx.get(soc.isStore):
-                print("STORE")
+                print("STORE rs1={} rs2={} imm={} funct3={}".format(
+                    ctx.get(soc.rs1Id), ctx.get(soc.rs2Id), ctx.get(soc.Iimm),
+                    ctx.get(soc.funct3)))
             if ctx.get(soc.isSystem):
-                print("SYSTEM")
+                print("SYSTEM rd={} rs1={} imm={} funct3={}".format(
+                    ctx.get(soc.rdId), ctx.get(soc.rs1Id), ctx.get(soc.Iimm),
+                    ctx.get(soc.funct3)))
                 break
         await ctx.tick()
         prev_clk = clk
@@ -39,4 +45,4 @@ sim.add_testbench(testbench)
 
 with sim.write_vcd('bench.vcd', 'bench.gtkw', traces=soc.ports):
     # Let's run for a quite long time
-    sim.run_until(2, )
+    sim.run_until(2)

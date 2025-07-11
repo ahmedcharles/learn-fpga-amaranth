@@ -27,6 +27,8 @@ class CPU(Elaboratable):
         regs = Array([Signal(32, name="x"+str(x)) for x in range(32)])
         rs1 = Signal(32)
         rs2 = Signal(32)
+        self.rs1 = rs1
+        self.rs2 = rs2
 
         # ALU registers
         aluOut = Signal(32)

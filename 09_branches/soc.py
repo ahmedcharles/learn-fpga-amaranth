@@ -31,7 +31,10 @@ class SOC(Elaboratable):
 
         m = Module()
 
-        cw = Clockworks(m, slow=21, sim_slow=10)
+        cw = Clockworks(slow=21)
+
+        m.domains += ClockDomain(cw.domain_name)
+
         m.submodules.cw = cw
 
         # Program counter
@@ -74,7 +77,7 @@ class SOC(Elaboratable):
         # Register addresses decoder
         rs1Id = (instr[15:20])
         rs2Id = (instr[20:25])
-        rdId =  (instr[7:12])
+        rdId =  (instr[ 7:12])
 
         # Function code decdore
         funct3 = (instr[12:15])
@@ -120,7 +123,7 @@ class SOC(Elaboratable):
                 m.d.comb += takeBranch.eq(rs1 < rs2)
             with m.Case(0b111):
                 m.d.comb += takeBranch.eq(rs1 >= rs2)
-            with m.Case("---"):
+            with m.Default():
                 m.d.comb += takeBranch.eq(0)
 
         # Next program counter is either next intstruction or depends on
@@ -142,7 +145,8 @@ class SOC(Elaboratable):
                 ]
                 m.next = "EXECUTE"
             with m.State("EXECUTE"):
-                m.d.slow += pc.eq(nextPc)
+                with m.If(~isSystem):
+                    m.d.slow += pc.eq(nextPc)
                 m.next = "FETCH_INSTR"
 
         # Register write back
@@ -175,8 +179,10 @@ class SOC(Elaboratable):
             export(isALUreg, "isALUreg")
             export(isALUimm, "isALUimm")
             export(isBranch, "isBranch")
-            export(isJAL, "isJAL")
             export(isJALR, "isJALR")
+            export(isJAL, "isJAL")
+            export(isAUIPC, "isAUIPC")
+            export(isLUI, "isLUI")
             export(isLoad, "isLoad")
             export(isStore, "isStore")
             export(isSystem, "isSystem")

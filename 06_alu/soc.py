@@ -16,63 +16,40 @@ class SOC(Elaboratable):
 
         m = Module()
 
-        cw = Clockworks(m, slow=21, sim_slow=10)
+        cw = Clockworks(slow=21)
+
+        m.domains += ClockDomain(cw.domain_name)
+
         m.submodules.cw = cw
 
         # Instruction sequence to be executed
         sequence = [
-                #       24      16       8       0
-                # .......|.......|.......|.......|
-                #R         rs2  rs1 f3   rd     op
-                #I         imm  rs1 f3   rd     op
-                #S    imm  rs2  rs1 f3  imm     op
-                # ......|....|....|..|....|......|
-                # add x1, x0, x0
-                #                    rs2   rs1  add  rd   ALUREG
-                # -> x1 = 0
+                # enc@pc=0x000 (ADD  (x0, x0, x0))
+                0b00000000000000000000000000110011,
+                # enc@pc=0x004 (ADD  (x1, x0, x0))
                 0b00000000000000000000000010110011,
-                # addi x1, x1, 1
-                #             imm         rs1  add  rd   ALUIMM
-                # -> x1 = 1
+                # enc@pc=0x008 (ADDI (x1, x1, 1 ))
                 0b00000000000100001000000010010011,
-                # addi x1, x1, 1
-                #             imm         rs1  add  rd   ALUIMM
-                # -> x1 = 2
+                # enc@pc=0x00c (ADDI (x1, x1, 1 ))
                 0b00000000000100001000000010010011,
-                # addi x1, x1, 1
-                #             imm         rs1  add  rd   ALUIMM
-                # -> x1 = 3
+                # enc@pc=0x010 (ADDI (x1, x1, 1 ))
                 0b00000000000100001000000010010011,
-                # addi x1, x1, 1
-                #             imm         rs1  add  rd   ALUIMM
-                # -> x1 = 4
+                # enc@pc=0x014 (ADDI (x1, x1, 1 ))
                 0b00000000000100001000000010010011,
-                # add x2, x1, x0
-                #                    rs2   rs1  add  rd   ALUREG
-                # -> x2 = 4
+                # enc@pc=0x018 (ADD  (x2, x1, x0))
                 0b00000000000000001000000100110011,
-                # add x3, x1, x2
-                #                    rs2   rs1  add  rd   ALUREG
-                # -> x3 = 8
+                # enc@pc=0x01c (ADD  (x3, x1, x2))
                 0b00000000001000001000000110110011,
-                # srli x3, x3, 3
-                #                   shamt   rs1  sr  rd   ALUIMM
-                # -> x3 = 1
+                # enc@pc=0x020 (SRLI (x3, x3, 3 ))
                 0b00000000001100011101000110010011,
-                # slli x3, x3, 31
-                #                   shamt   rs1  sl  rd   ALUIMM
-                # -> x3 = 0x80000000
+                # enc@pc=0x024 (SLLI (x3, x3, 31))
                 0b00000001111100011001000110010011,
-                # srai x3, x3, 5
-                #                   shamt   rs1  sr  rd   ALUIMM
-                # -> x3 = 0xfc000000
+                # enc@pc=0x028 (SRAI (x3, x3, 5 ))
                 0b01000000010100011101000110010011,
-                # srli x1, x3, 26
-                #                   shamt   rs1  sr  rd   ALUIMM
-                # -> x1 = 0x3f
+                # enc@pc=0x02c (SRLI (x1, x3, 26))
                 0b00000001101000011101000010010011,
-
-                0b00000000000100000000000001110011  # S ebreak
+                # enc@pc=0x030 (EBREAK ())
+                0b00000000000100000000000001110011,
         ]
 
         # Program counter
@@ -114,7 +91,7 @@ class SOC(Elaboratable):
         # Register addresses decoder
         rs1Id = (instr[15:20])
         rs2Id = (instr[20:25])
-        rdId = ( instr[7:12])
+        rdId =  (instr[ 7:12])
 
         # Function code decdore
         funct3 = (instr[12:15])
@@ -159,7 +136,8 @@ class SOC(Elaboratable):
                 ]
                 m.next = "EXECUTE"
             with m.State("EXECUTE"):
-                m.d.slow += pc.eq(pc + 1)
+                with m.If(~isSystem):
+                    m.d.slow += pc.eq(pc + 1)
                 m.next = "FETCH_INSTR"
 
         # Assign important signals to LEDS
@@ -189,6 +167,11 @@ class SOC(Elaboratable):
             export(instr, "instr")
             export(isALUreg, "isALUreg")
             export(isALUimm, "isALUimm")
+            export(isBranch, "isBranch")
+            export(isJALR, "isJALR")
+            export(isJAL, "isJAL")
+            export(isAUIPC, "isAUIPC")
+            export(isLUI, "isLUI")
             export(isLoad, "isLoad")
             export(isStore, "isStore")
             export(isSystem, "isSystem")

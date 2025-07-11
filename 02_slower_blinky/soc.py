@@ -1,4 +1,4 @@
-from amaranth import Signal, Module
+from amaranth import ClockDomain, Signal, Module
 from amaranth.lib import wiring
 from amaranth.lib.wiring import In, Out
 
@@ -19,11 +19,14 @@ class SOC(wiring.Component):
         count = Signal(5)
 
         # Instantiate the clockwork with a divider of 2^21
-        cw = Clockworks(m, slow=21)
+        cw = Clockworks(slow=21)
+
+        m.domains += ClockDomain(cw.domain_name)
 
         # Add the clockwork to the top module. If this is not done,
         # the logic will not be instantiated.
         m.submodules.cw = cw
+
 
         # The clockwork provides a new clock domain called 'slow'.
         # We replace the default sync domain with the new one to have the

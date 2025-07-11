@@ -12,7 +12,10 @@ class SOC(Elaboratable):
 
         m = Module()
 
-        cw = Clockworks(m, slow=21)
+        cw = Clockworks(slow=21)
+
+        m.domains += ClockDomain(cw.domain_name)
+
         m.submodules.cw = cw
 
         sequence = [
@@ -28,10 +31,10 @@ class SOC(Elaboratable):
                 0b11000,
         ]
 
-        pc = Signal(5)
+        pc = Signal(range(len(sequence)))
         mem = Array([Signal(5, reset=x) for x in sequence])
 
-        m.d.slow += pc.eq(Mux(pc == len(sequence), 0, pc + 1))
+        m.d.slow += pc.eq(Mux(pc == len(sequence) - 1, 0, pc + 1))
         m.d.comb += self.leds.eq(mem[pc])
 
         return m

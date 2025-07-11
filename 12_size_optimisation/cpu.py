@@ -130,7 +130,7 @@ class CPU(Elaboratable):
                 m.d.comb += takeBranch.eq(LTU)
             with m.Case(0b111):
                 m.d.comb += takeBranch.eq(~LTU)
-            with m.Case("---"):
+            with m.Default():
                 m.d.comb += takeBranch.eq(0)
 
         # Next program counter is either next intstruction or depends on
@@ -160,7 +160,8 @@ class CPU(Elaboratable):
                 ]
                 m.next = "EXECUTE"
             with m.State("EXECUTE"):
-                m.d.sync += pc.eq(nextPc)
+                with m.If(~isSystem):
+                    m.d.sync += pc.eq(nextPc)
                 m.next = "FETCH_INSTR"
 
         # Register write back
