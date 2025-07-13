@@ -1,4 +1,5 @@
 from amaranth import *
+from amaranth.lib import memory
 
 from clockworks import Clockworks
 
@@ -47,7 +48,13 @@ class SOC(Elaboratable):
         instr = Signal(32, reset=0b0110011)
 
         # Instruction memory initialised with above 'sequence'
-        mem = Array([Signal(32, reset=x) for x in sequence])
+        m.submodules.mem = mem = DomainRenamer(cw.domain_name)(memory.Memory(
+            shape=unsigned(32),
+            depth=len(sequence),
+            init=sequence,
+            attrs={"ram_style": "block"},
+        ))
+        rd = mem.read_port()
 
         # Opcode decoder
         isALUreg = (instr[0:7] == 0b0110011)
@@ -78,9 +85,10 @@ class SOC(Elaboratable):
         funct7 = (instr[25:32])
 
         # Fetch instruction and increase PC
+        m.d.comb += rd.addr.eq(pc)
         m.d.slow += [
-                instr.eq(mem[pc]),
-                pc.eq(Mux(isSystem, 0, pc + 1))
+            instr.eq(rd.data),
+            pc.eq(Mux(isSystem, 0, pc + 1))
         ]
 
         # Assign important signals to LEDS

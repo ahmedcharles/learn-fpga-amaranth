@@ -1,4 +1,5 @@
 from amaranth import *
+from amaranth.lib import memory
 from riscv_assembler import RiscvAssembler
 
 class Memory(Elaboratable):
@@ -32,27 +33,44 @@ class Memory(Elaboratable):
         print("memory = {}".format(self.instructions))
 
         # Instruction memory initialised with above instructions
-        self.mem = Array([Signal(32, reset=x, name="mem{}".format(i))
-                          for i,x in enumerate(self.instructions)])
+        self.mem_init=[x for x in self.instructions]
+
+        while(len(self.mem_init) < 100):
+            self.mem_init.append(0)
+
+        self.mem_init.append(0x04030201)
+        self.mem_init.append(0x08070605)
+        self.mem_init.append(0x0c0b0a09)
+        self.mem_init.append(0xff0f0e0d)
+
+        print(self.mem_init)
 
         self.mem_addr = Signal(32)
         self.mem_rdata = Signal(32)
         self.mem_rstrb = Signal()
 
-        while(len(self.mem) < 100):
-            self.mem.append(0)
-        
-        self.mem.append(0x04030201)
-        self.mem.append(0x08070605)
-        self.mem.append(0x0c0b0a09)
-        self.mem.append(0xff0f0e0d)
-
-        print(self.mem)
-
     def elaborate(self, platform):
         m = Module()
 
-        with m.If(self.mem_rstrb):
-            m.d.sync += self.mem_rdata.eq(self.mem[self.mem_addr[2:32]])
+        if False:
+            mem = Array([Signal(32, reset=x, name="mem{}".format(i))
+                            for i,x in enumerate(self.mem_init)])
+
+            with m.If(self.mem_rstrb):
+                m.d.sync += self.mem_rdata.eq(mem[self.mem_addr[2:32]])
+        else:
+            m.submodules.mem = mem = memory.Memory(
+                shape=unsigned(32),
+                depth=len(self.mem_init),
+                init=self.mem_init,
+                attrs={"ram_style": "block"},
+            )
+            rd = mem.read_port()
+
+            m.d.comb += [
+                rd.en.eq(self.mem_rstrb),
+                rd.addr.eq(self.mem_addr),
+                self.mem_rdata.eq(rd.data),
+            ]
 
         return m
